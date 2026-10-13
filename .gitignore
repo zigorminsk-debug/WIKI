@@ -1,0 +1,23 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# Generated platform folders. They are regenerated consistently by `flutter create`
+# in CI and with the bootstrap command described in README.md.
+android/
+windows/
+
+# IDE and operating system
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Never store a Confluence password in the repository.
+*.keystore
+key.properties

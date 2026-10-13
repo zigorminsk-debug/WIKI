@@ -1,0 +1,105 @@
+name: Build Android APK and Windows EXE
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+# The app has no need for a write-capable token.
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-apk:
+    name: Android release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate native projects
+        run: |
+          flutter create --platforms=android,windows --project-name confluence_kb --org ru.zigorminsk .
+          python3 tool/configure_platforms.py
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze and test
+        run: |
+          flutter analyze
+          flutter test
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Publish APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: confluence-kb-apk
+          if-no-files-found: error
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+  windows-exe:
+    name: Windows release EXE
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate native projects
+        shell: pwsh
+        run: |
+          flutter create --platforms=android,windows --project-name confluence_kb --org ru.zigorminsk .
+          python tool/configure_platforms.py
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze and test
+        run: |
+          flutter analyze
+          flutter test
+
+      - name: Build Windows release package
+        shell: pwsh
+        run: |
+          flutter build windows --release
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath confluence-kb-windows.zip
+
+      - name: Publish portable EXE package
+        uses: actions/upload-artifact@v4
+        with:
+          name: confluence-kb-windows
+          if-no-files-found: error
+          path: |
+            confluence-kb-windows.zip
+            build/windows/x64/runner/Release/confluence_kb.exe
+          retention-days: 30
