@@ -60,7 +60,7 @@ Workflow `.github/workflows/build.yml` запускается при каждо�
 2. запускает тесты и анализ;
 3. публикует артефакты `confluence-kb-apk` и `confluence-kb-windows`.
 
-В артефакте Windows находится ZIP со всем содержимым Release-папки, включая EXE и необходимые DLL. В артефакте Android — подписанный для установки release APK. По умолчанию APK подписан debug-ключом Flutter, что подходит для внутренней установки. Для публикации в Google Play замените signing configuration на ваш release keystore и храните его в GitHub Secrets.
+Артефакт Windows содержит всё содержимое Release-папки: EXE, необходимые DLL, SQLite-библиотеку и каталог `data/`. После скачивания распакуйте архив **целиком** в одну папку и запускайте `confluence_kb.exe` оттуда — не копируйте EXE отдельно. В артефакте Android — подписанный для установки release APK. По умолчанию APK подписан debug-ключом Flutter, что подходит для внутренней установки. Для публикации в Google Play замените signing configuration на ваш release keystore и храните его в GitHub Secrets.
 
 ## Безопасность и данные
 

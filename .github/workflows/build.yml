@@ -95,16 +95,13 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      - name: Package Windows release
-        shell: pwsh
-        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath confluence-kb-windows.zip
-
+      # Upload the complete Release directory. Flutter desktop applications
+      # cannot be launched by copying only the EXE: it needs flutter_windows.dll,
+      # sqlite3.dll and the data/ directory next to it.
       - name: Publish portable EXE package
         uses: actions/upload-artifact@v4
         with:
           name: confluence-kb-windows
           if-no-files-found: error
-          path: |
-            confluence-kb-windows.zip
-            build/windows/x64/runner/Release/confluence_kb.exe
+          path: build/windows/x64/runner/Release/
           retention-days: 30
