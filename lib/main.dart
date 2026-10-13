@@ -446,7 +446,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onPressed: _saving || widget.controller.isSyncing ? null : _saveAndSync,
           icon: _saving || widget.controller.isSyncing
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.save_and_sync),
+              : const Icon(Icons.sync),
           label: const Text('Сохранить и синхронизировать'),
         ),
         const SizedBox(height: 18),

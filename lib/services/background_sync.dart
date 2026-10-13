@@ -16,7 +16,6 @@ const _dailySyncUniqueName = 'daily-confluence-sync-v1';
 void backgroundSyncDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     WidgetsFlutterBinding.ensureInitialized();
-    DartPluginRegistrant.ensureInitialized();
     try {
       await DatabaseService.configureForCurrentPlatform();
       final settings = await SettingsService.instance.load();

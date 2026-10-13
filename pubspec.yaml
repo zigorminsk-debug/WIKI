@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   flutter_html: ^3.0.0-beta.2
+  # flutter_html 3.0.0 still imports query_selector.matches, removed in html 0.15.6.
+  html: 0.15.5
   flutter_secure_storage: ^9.2.2
   http: ^1.2.2
   path: ^1.9.0
