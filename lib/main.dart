@@ -176,53 +176,132 @@ class _AppShellState extends State<AppShell> {
     return AnimatedBuilder(
       animation: widget.controller,
       builder: (context, _) {
+        final isDesktopLayout = MediaQuery.sizeOf(context).width >= 800;
         final pageTitle = _selectedIndex == 0 ? 'База знаний' : 'Настройки';
+        final content = Column(
+          children: <Widget>[
+            if (widget.controller.transientError != null)
+              _ErrorBanner(
+                text: widget.controller.transientError!,
+                onDismiss: () {
+                  widget.controller.transientError = null;
+                  widget.controller.notifyListeners();
+                },
+              ),
+            Expanded(
+              child: _selectedIndex == 0
+                  ? LibraryScreen(controller: widget.controller)
+                  : SettingsScreen(
+                      controller: widget.controller,
+                      onSaved: () => setState(() => _selectedIndex = 0),
+                    ),
+            ),
+          ],
+        );
+
         return Scaffold(
           appBar: AppBar(
-            title: Text(pageTitle),
+            title: Row(
+              children: <Widget>[
+                if (!isDesktopLayout) ...<Widget>[
+                  const Icon(Icons.auto_stories_outlined),
+                  const SizedBox(width: 10),
+                ],
+                Text(pageTitle),
+              ],
+            ),
             actions: <Widget>[
               if (_selectedIndex == 0)
-                IconButton(
-                  tooltip: 'Синхронизировать сейчас',
-                  onPressed: widget.controller.isSyncing || !widget.controller.settings.isConfigured
-                      ? null
-                      : () => unawaited(widget.controller.synchronize()),
-                  icon: widget.controller.isSyncing
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.sync),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: IconButton(
+                    tooltip: 'Синхронизировать сейчас',
+                    onPressed: widget.controller.isSyncing || !widget.controller.settings.isConfigured
+                        ? null
+                        : () => unawaited(widget.controller.synchronize()),
+                    icon: widget.controller.isSyncing
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.sync),
+                  ),
                 ),
             ],
           ),
-          body: Column(
-            children: <Widget>[
-              if (widget.controller.transientError != null)
-                _ErrorBanner(
-                  text: widget.controller.transientError!,
-                  onDismiss: () {
-                    widget.controller.transientError = null;
-                    widget.controller.notifyListeners();
-                  },
+          body: isDesktopLayout
+              ? Row(
+                  children: <Widget>[
+                    _DesktopNavigation(
+                      selectedIndex: _selectedIndex,
+                      onSelected: (index) => setState(() => _selectedIndex = index),
+                    ),
+                    const VerticalDivider(width: 1),
+                    Expanded(child: content),
+                  ],
+                )
+              : content,
+          bottomNavigationBar: isDesktopLayout
+              ? null
+              : NavigationBar(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+                  destinations: const <NavigationDestination>[
+                    NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Страницы'),
+                    NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Настройки'),
+                  ],
                 ),
-              Expanded(
-                child: _selectedIndex == 0
-                    ? LibraryScreen(controller: widget.controller)
-                    : SettingsScreen(
-                        controller: widget.controller,
-                        onSaved: () => setState(() => _selectedIndex = 0),
-                      ),
-              ),
-            ],
-          ),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) => setState(() => _selectedIndex = index),
-            destinations: const <NavigationDestination>[
-              NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Страницы'),
-              NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Настройки'),
-            ],
-          ),
         );
       },
+    );
+  }
+}
+
+class _DesktopNavigation extends StatelessWidget {
+  const _DesktopNavigation({required this.selectedIndex, required this.onSelected});
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationRail(
+      extended: true,
+      minExtendedWidth: 232,
+      selectedIndex: selectedIndex,
+      onDestinationSelected: onSelected,
+      leading: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 12, 28),
+        child: Row(
+          children: <Widget>[
+            CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: const Icon(Icons.auto_stories_outlined),
+            ),
+            const SizedBox(width: 12),
+            Text('Confluence KB', style: Theme.of(context).textTheme.titleMedium),
+          ],
+        ),
+      ),
+      destinations: const <NavigationRailDestination>[
+        NavigationRailDestination(
+          icon: Icon(Icons.menu_book_outlined),
+          selectedIcon: Icon(Icons.menu_book),
+          label: Text('Страницы'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.settings_outlined),
+          selectedIcon: Icon(Icons.settings),
+          label: Text('Настройки'),
+        ),
+      ],
+      trailing: const Padding(
+        padding: EdgeInsets.all(16),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.offline_pin_outlined, size: 18),
+            SizedBox(width: 8),
+            Text('Офлайн-кэш'),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -394,9 +473,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = widget.controller.settings;
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: <Widget>[
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final horizontalPadding = constraints.maxWidth > 840 ? (constraints.maxWidth - 800) / 2 : 20.0;
+        return ListView(
+          padding: EdgeInsets.fromLTRB(horizontalPadding, 28, horizontalPadding, 32),
+          children: <Widget>[
         Text('Подключение к Confluence', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),
         const Text('Данные сохраняются только на этом устройстве. Пароль хранится в защищённом хранилище ОС.'),
@@ -454,8 +536,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 10),
         Text('Автоматическая синхронизация', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 4),
-        const Text('Каждые 24 часа при наличии сети. Android запускает задачу в фоне с допустимой системной задержкой; на Windows — при открытом приложении и при следующем запуске.'),
-      ],
+            const Text('Каждые 24 часа при наличии сети. Android запускает задачу в фоне с допустимой системной задержкой; на Windows — при открытом приложении и при следующем запуске.'),
+          ],
+        );
+      },
     );
   }
 }
