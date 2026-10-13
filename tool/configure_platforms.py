@@ -31,3 +31,10 @@ for gradle_name, old, new in (
     gradle = Path(gradle_name)
     if gradle.exists():
         gradle.write_text(gradle.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
+
+# `flutter create` adds a counter sample test even to an existing project. It
+# targets the template counter app rather than this application and would make
+# the real test suite fail, so remove only that recognisable generated sample.
+template_test = Path("test/widget_test.dart")
+if template_test.exists() and "Counter increments smoke test" in template_test.read_text(encoding="utf-8"):
+    template_test.unlink()
