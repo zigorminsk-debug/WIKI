@@ -43,11 +43,8 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      # Tests run in the Windows job below. Keeping Android focused on its
-      # platform build avoids running the identical Dart suite twice.
-      - name: Analyze
-        run: flutter analyze
-
+      # Static analysis and tests run in the Windows job below. The release
+      # Android compiler remains an independent platform validation.
       - name: Build release APK
         run: flutter build apk --release
 
