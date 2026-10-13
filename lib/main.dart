@@ -11,10 +11,11 @@ import 'services/database_service.dart';
 import 'services/settings_service.dart';
 import 'services/sync_service.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await DatabaseService.configureForCurrentPlatform();
-  await BackgroundSyncService().initialize();
+  // Render the shell before opening plugins/native libraries. A damaged or
+  // missing local SQLite library must result in a readable in-app error, not a
+  // permanently black Windows window.
   runApp(const KnowledgeBaseApp());
 }
 
@@ -31,7 +32,17 @@ class _KnowledgeBaseAppState extends State<KnowledgeBaseApp> {
   @override
   void initState() {
     super.initState();
-    unawaited(_controller.initialize());
+    unawaited(_bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    try {
+      await DatabaseService.configureForCurrentPlatform();
+      await BackgroundSyncService().initialize();
+      await _controller.initialize();
+    } catch (_) {
+      _controller.showStartupError();
+    }
   }
 
   @override
@@ -92,6 +103,12 @@ class KnowledgeBaseController extends ChangeNotifier {
     if (settings.isConfigured && stale) {
       unawaited(synchronize(silent: true));
     }
+  }
+
+  void showStartupError() {
+    isLoading = false;
+    transientError = 'Не удалось открыть локальное хранилище. Закройте приложение, обновите его и повторите запуск.';
+    notifyListeners();
   }
 
   Future<void> refreshPages([String query = '']) async {
