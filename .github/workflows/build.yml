@@ -43,10 +43,10 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Analyze and test
-        run: |
-          flutter analyze
-          flutter test
+      # Tests run in the Windows job below. Keeping Android focused on its
+      # platform build avoids running the identical Dart suite twice.
+      - name: Analyze
+        run: flutter analyze
 
       - name: Build release APK
         run: flutter build apk --release
@@ -87,11 +87,20 @@ jobs:
           flutter analyze
           flutter test
 
-      - name: Build Windows release package
+      - name: Build Windows executable
         shell: pwsh
         run: |
-          flutter build windows --release
-          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath confluence-kb-windows.zip
+          flutter build windows --release 2>&1 | Tee-Object -FilePath windows-build.log
+          if ($LASTEXITCODE -ne 0) {
+            $details = (Get-Content windows-build.log | Select-Object -Last 25) -join "`n"
+            $details = $details.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Output "::error title=Windows build output::$details"
+            exit $LASTEXITCODE
+          }
+
+      - name: Package Windows release
+        shell: pwsh
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath confluence-kb-windows.zip
 
       - name: Publish portable EXE package
         uses: actions/upload-artifact@v4
